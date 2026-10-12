@@ -2,9 +2,11 @@
 
 
 1. **Make a branch.** Never work on `main`.
-   ```
+
+   ```bash
    git switch -c fix/bms-can-messages
    ```
+
    Name it `<type>/<board>-<what>`, such as `feat/vcu-regen-limit`.
 2. **Write the code.** Follow [CODE_GUIDE.md](CODE_GUIDE.md).
 3. **Commit** follow [VERSION_GUIDE.md](VERSION_GUIDE.md) and the commit messages format.
