@@ -31,7 +31,7 @@ Bad: `fixed stuff`, `TTT day 2`
 
 Within the comment body the more details you add the better but don't add too much as thats what the explanation docs are for. 
 
-If there is anything that still needs to be completed add a TODO list in the commit's comment.
+If there is anything that still needs to be completed add to the TODO checklist in the readme for that board/folder.
 
 ## Who reviews (Will be finalized once proper team structuring is in place)
 

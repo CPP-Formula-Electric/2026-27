@@ -51,17 +51,9 @@ constexpr float CELL_OVERTEMP_LIMIT_C = 60.0f;  // cite the source here: cell da
 if (cellTempC > CELL_OVERTEMP_LIMIT_C) { ... }
 ```
 
-In the future for example you would put:
-
-Put rule and safety limits in `limits.h`, values you tune at the track in `calibration.h`, and pins in `pins.h`.
-
 ## Comments
 
-- Say **why**. The code already shows what it does.
-  ```cpp
-  // T.4.2.5: power must stop once the pedal sensors disagree for 100 ms.
-  torqueCmdNm = 0;
-  ```
+- Give clarifications. Don't just comment on code where it is obvious on what it is doing.
 - Put `// T.x.y.z:` above code that follows a rule.
 - Put `// SAFETY:` above code that has a high risk of hurting someone or damaging the car.
 - Delete old code. Avoid commenting old code out unless it is absolutely necessary. 
