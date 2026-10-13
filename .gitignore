@@ -1,0 +1,13 @@
+# VS Code / PlatformIO editor settings
+.vscode/
+
+# PlatformIO build output
+.pio/
+
+# Python
+__pycache__/
+*.pyc
+
+# Logs 
+/BERT27/**/*.BIN
+/BERT27/**/*.csv
