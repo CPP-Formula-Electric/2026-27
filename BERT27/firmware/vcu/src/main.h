@@ -13,11 +13,24 @@
 #define VCU_MAIN_H
 
 #include <Arduino.h>
+#include <SD.h>
 
 // Owned by inverter (V12). Used by fans.
 extern int16_t inverterTempTenthsC;
 extern int16_t pm100MotorTempTenthsC;
 extern bool haveInverterTemp;
 extern bool havePm100MotorTemp;
+
+// Owned by data_log (V21). Used by imu.
+struct __attribute__((packed)) MeasuredImuRecord {
+  float type, timeSeconds;
+  float accelXG, accelYG, accelZG;
+  float gyroXDps, gyroYDps, gyroZDps, temperatureC;
+};
+extern File sdMeasuredLogFile;
+void appendSdLog(File &file, bool measuredLog, const void *data, size_t len);
+
+// Owned by can_trace (V22). Used by imu.
+void printCanHexByte(uint8_t value);
 
 #endif  // VCU_MAIN_H
