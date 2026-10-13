@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "pins.h"
+#include "safety_limits.h"
 
 /*
   BERT26 VCU integrated sketch
@@ -67,19 +68,7 @@ static const int APPS_2_RAW_MIN = 2130;
 static const int APPS_2_RAW_MAX = 4013;
 
 static const float APPS_EMA_ALPHA          = 0.35f;
-static const float APPS_IMPLAUSIBLE_PCT    = 10.0f;
-// T.4.2.5 allows up to 100 ms of >10% channel deviation before it counts as
-// an implausibility, so brief sensor/connector noise no longer drops RTD.
-static const uint32_t APPS_IMPLAUSIBILITY_PERSIST_MS = 100;
-// A raw count this far outside a channel's calibrated span means a wiring or
-// sensor fault (short/open), not pedal travel.
-static const int APPS_RAW_FAULT_MARGIN = 150;
 static const float PEDAL_ZERO_DEADBAND_PCT = 7.0f;
-static const float MAX_TORQUE_NM           = 170.0f;
-static const float BSPC_APPS_THRESHOLD_PCT = 25.0f;
-// Per EV.4.7/T.4.7 the BSPC latch only releases once the accelerator returns
-// below 5% travel; releasing the brake alone must NOT restore torque.
-static const float BSPC_APPS_RESET_PCT     = 5.0f;
 
 // ---- Regenerative braking -----------------------------------------------
 // This single switch makes regen easy to disable without changing any logic.
@@ -93,34 +82,16 @@ static const float REGEN_HEAVY_BRAKE_END_PCT = 40.0f;
 static const float REGEN_SOC_DERATE_START_PCT = 90.0f;
 static const float REGEN_SOC_DISABLE_PCT = 95.0f;
 static const float REGEN_MAX_POWER_KW = 20.0f;
-// Keep regen below the BMS's 4.200 V/cell hard fault. Regulate toward 4.160 V,
-// then latch regen off for 10 seconds if a terminal measurement reaches
-// 4.180 V. The two margins prevent normal regulation from repeatedly hitting
-// the stop threshold and leave room for quantization and control-loop delay.
-static const float REGEN_CELL_OV_LIMIT_V = 4.200f;
-static const float REGEN_CELL_CURRENT_TARGET_MARGIN_V = 0.040f;
-static const float REGEN_CELL_TERMINAL_STOP_MARGIN_V = 0.020f;
-static const float REGEN_CELL_CURRENT_TARGET_V =
-    REGEN_CELL_OV_LIMIT_V - REGEN_CELL_CURRENT_TARGET_MARGIN_V;
-static const float REGEN_CELL_TERMINAL_STOP_V =
-    REGEN_CELL_OV_LIMIT_V - REGEN_CELL_TERMINAL_STOP_MARGIN_V;
 // Equivalent DC resistance of one complete 4P cell bank. Pack current flows
 // through every series bank, so no series-cell multiplier belongs here.
 static const float REGEN_CELL_BANK_RESISTANCE_OHM = 0.00285f;
 static const float REGEN_PACK_CURRENT_SENSOR_MAX_A = 500.0f;
 static constexpr uint32_t REGEN_VOLTAGE_WINDOW_MS = 10000;
-// 0x310 and 0x311 are broadcast every 500 ms. Allow three missed broadcasts,
-// then fail safe to zero regen rather than calculating from stale data.
-static constexpr uint32_t REGEN_BMS_DATA_TIMEOUT_MS = 1500;
-static constexpr uint32_t REGEN_BMS_PAIR_MAX_SKEW_MS = 100;
 // A 24-entry ring retains at least 10 seconds at the BMS's 500 ms cadence.
 static constexpr uint8_t REGEN_VOLTAGE_WINDOW_CAPACITY = 24;
 // The BMS monitors 96 channels, but one is a bypassed busbar channel; the pack
 // has 95 active series cell banks.
 static constexpr uint8_t REGEN_PACK_SERIES_BANKS = 95;
-// Rules cutoff: no regen at or below 5 km/h; ramp to full strength by 15 km/h.
-static const float REGEN_CUTOFF_SPEED_KMH = 5.0f;
-static const float REGEN_FULL_SPEED_KMH = 15.0f;
 
 // Each entry contains a synchronized 0x310 maximum-cell voltage and 0x311 pack
 // current. Pack current is positive while discharging and negative during
@@ -137,33 +108,10 @@ static RegenVoltageSampleWindow regenVoltageWindow = {};
 static uint32_t lastRegenVoltageSampleMs = 0;
 static bool regenBmsPairValid = false;
 
-// ---- Power derate -------------------------------------------------------
-// When any protection condition trips, commanded torque is capped so output
-// power stays at or below the active power limit (kW). The cap is the torque
-// that produces that power at the current shaft speed:
-//   T[Nm] = 9549 * kW / rpm (mechanical power form; ignores drivetrain/inverter
-// efficiency, so the electrical bus power will be slightly higher than this).
-//
-// Low cell voltage derates *linearly* on the rolling-average minimum cell:
-// at POWER_DERATE_CELL_FULL_MV the limit is POWER_DERATE_CELL_MAX_KW, falling
-// to 0 kW at POWER_DERATE_CELL_ZERO_MV. Motor/battery-temperature trips use the
-// fixed POWER_DERATE_KW cap. When more than one condition is active the lowest
-// (most restrictive) limit wins.
-static const float    POWER_DERATE_KW           = 5.0f;
 static const float    TORQUE_PER_KW_PER_RPM      = 9549.0f;  // 60000 / (2*pi)
 // Below this rpm the power cap exceeds MAX_TORQUE_NM anyway; the guard also
 // avoids dividing by zero / near-zero rpm.
 static const int      POWER_DERATE_MIN_RPM       = 50;
-// Linear low-voltage derate endpoints (rolling-average minimum cell):
-//   >= CELL_FULL_MV -> no voltage derate; == CELL_FULL_MV -> CELL_MAX_KW;
-//   <= CELL_ZERO_MV -> 0 kW; linear in between.
-static const uint16_t POWER_DERATE_CELL_FULL_MV  = 3600;   // 60 kW point
-static const uint16_t POWER_DERATE_CELL_ZERO_MV  = 2500;   // 0 kW point
-static const float    POWER_DERATE_CELL_MAX_KW   = 60.0f;
-// Derate trip points. Battery temperature is evaluated on a 15 s rolling
-// average; motor temperature is instantaneous.
-static const float    POWER_DERATE_MOTOR_TEMP_C  = 105.0f; // >  trips (instantaneous)
-static const int16_t  POWER_DERATE_BATT_TEMP_C   = 50;     // >  trips (rolling avg)
 static const uint32_t POWER_DERATE_SAMPLE_MS     = 250;    // rolling-average sample period
 static const uint32_t POWER_DERATE_WINDOW_MS     = 15000;  // rolling-average window
 static const uint8_t  POWER_DERATE_WINDOW_SAMPLES =
@@ -206,8 +154,6 @@ static constexpr bool CAN_LOG_SERIAL_ENABLED = true;
 static constexpr bool CAN_TRANSLATION_SERIAL_ENABLED = true;
 static constexpr bool APPS_SERIAL_LOG_ENABLED = true;
 
-// Set false to bypass brake-press requirement when bench testing without pedals.
-static constexpr bool REQUIRE_BRAKE_FOR_RTD = true;
 static constexpr uint32_t APPS_SERIAL_LOG_PERIOD_MS = 100;
 
 // Cascadia PM100DX command frame from BERT25.
@@ -235,19 +181,14 @@ static constexpr uint8_t PM100_BROADCAST_ENABLE_MAX_ATTEMPTS = 3;
 // require power-cycling the inverter. 240 V = 96 series cells at the 2.5 V
 // minimum, so any bus above that means the pack is genuinely back on the bus.
 static constexpr uint16_t PM100_PARAM_FAULT_CLEAR = 20;
-static constexpr float PM100_FAULT_CLEAR_MIN_BUS_V = 240.0f;
-static constexpr uint32_t PM100_FAULT_CLEAR_RETRY_MS = 2000;
-static constexpr uint8_t PM100_FAULT_CLEAR_MAX_ATTEMPTS = 3;
 static constexpr uint16_t TORQUE_SCALE       = 10;      // 0.1 Nm per LSB
 static constexpr uint32_t CMD_PERIOD_MS      = 10;      // 100 Hz
 static constexpr uint32_t PM100_CMD_PERIOD_US = CMD_PERIOD_MS * 1000u;
 static constexpr float MPH_PER_RPM           = 0.014005f;
 static constexpr float KMH_PER_MPH           = 1.609344f;
 
-static constexpr uint32_t BMS_TIMEOUT_MS = 10000;
 static constexpr uint32_t SCREEN_PERIOD_MS = 100;
 static constexpr uint32_t DASHBOARD_FULL_REDRAW_MS = 120000;  // periodic anti-glitch repaint
-static constexpr uint32_t STARTUP_BMS_IMD_FAULT_DELAY_MS = 12000;
 static constexpr uint32_t FAULT_DISPLAY_CYCLE_MS = 1500;
 static constexpr uint32_t FAULT_BANNER_DURATION_MS = 5000;
 // GLV battery sits around 12-13 V; show the readout red once it sags below this.
@@ -300,14 +241,8 @@ static constexpr uint8_t IMD_SNV_BYTE         = 0xFF;
 static constexpr int32_t IMD_VOLTAGE_OFFSET   = 32128;
 static constexpr float IMD_VOLTAGE_SCALE      = 0.05f;
 
-static constexpr uint32_t TSSI_BLINK_PERIOD_MS    = 500;  // 2 Hz
-static constexpr uint32_t TSSI_BLINK_ON_MS        = 250;
-static constexpr uint32_t IMD_HEARTBEAT_TIMEOUT_MS = 5000;
 static constexpr uint32_t IMD_GET_REQ_PERIOD_MS    = 500;
  
-static constexpr uint16_t IMD_FAULT_BITS_MASK = (1u << 0) | (1u << 1) | (1u << 2) |
-                                                (1u << 3) | (1u << 4) | (1u << 7) |
-                                                (1u << 8) | (1u << 9) | (1u << 10);
 
 enum RtdState {
   RTD_STATE_FAULT_BLOCKED,
