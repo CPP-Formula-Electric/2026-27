@@ -18,6 +18,7 @@
 #include "fans.h"
 #include "imu.h"
 #include "energy_meter.h"
+#include "imd.h"
 #include "main.h"
 
 /*
@@ -162,16 +163,11 @@ static constexpr uint32_t EM_TEMPERATURE_ID = 0x60D;  // 250 ms: muxed module te
 static constexpr float EM_TEMP_SCALE_C = 0.5f;        // degC = raw * 0.5
 
 // Bender iso175 IMD/TSSI frames from VCU_TSSI_CODE_5_31_26.ino.
-static constexpr uint32_t IMD_INFO_GENERAL_ID = 0x37;
 static constexpr uint32_t IMD_INFO_ISOLATION_DETAIL_ID = 0x38;
 static constexpr uint32_t IMD_INFO_VOLTAGE_ID = 0x39;
 static constexpr uint32_t IMD_INFO_IT_SYSTEM_ID = 0x3A;
-static constexpr uint32_t IMD_RESPONSE_ID     = 0x23;
-static constexpr uint32_t IMD_REQUEST_ID      = 0x22;
 static constexpr uint32_t IMD_FALLBACK_REQUEST_ID = 0x0FF;
-static constexpr uint8_t IDX_WARN_ALARMS      = 0x6C;
 static constexpr uint16_t IMD_SNV_WORD        = 0xFFFF;
-static constexpr uint8_t IMD_SNV_BYTE         = 0xFF;
 static constexpr int32_t IMD_VOLTAGE_OFFSET   = 32128;
 static constexpr float IMD_VOLTAGE_SCALE      = 0.05f;
 
@@ -361,14 +357,6 @@ uint32_t lastCellLogRequestMs = 0;
 uint32_t cellVoltageRequestMs = 0;
 bool cellTemperatureRequestPending = false;
 
-bool imdFault = true;
-uint16_t imdWarnAlarms = 0;
-uint16_t imdRIsoKohm = 0xFFFF;
-uint8_t imdRIsoStatus = 0;
-uint8_t imdDeviceActivity = 0;
-uint32_t lastImdRxMs = 0;
-bool imdCanTimedOut = true;
-
 uint32_t tssiBlinkTimerMs = 0;
 bool tssiRedOn = false;
 // Once the TSSI has blinked red for any fault it stays latched in the red-blink
@@ -549,7 +537,6 @@ bool anyFaultActive();
 bool contactorsOpen();
 void handleBms2026StatusFrame(const CAN_message_t &msg);
 void handleBms2026TempFrame(const CAN_message_t &msg);
-void handleImdFrame(const CAN_message_t &msg);
 void handlePm100Temperatures1Frame(const CAN_message_t &msg);
 void handlePm100Temperatures3Frame(const CAN_message_t &msg);
 void handlePm100RpmFrame(const CAN_message_t &msg);
@@ -564,7 +551,6 @@ void servicePm100FaultClear();
 void sendPm100FaultClear();
 void setupTssi();
 void serviceTssi();
-void requestImdWarnings();
 void updateTssiLed(bool faultActive, uint32_t now);
 void setTssiGreenOn();
 void setTssiRedOn();
@@ -3517,45 +3503,6 @@ void handleBms2026TempFrame(const CAN_message_t &msg) {
   screenDirty = true;
 }
 
-void handleImdFrame(const CAN_message_t &msg) {
-  bool wasTimedOut = imdCanTimedOut;
-  uint16_t previousWarnings = imdWarnAlarms;
-  bool previousFault = imdFault;
-  bool faultDetectionArmed = bmsImdFaultDetectionArmed();
-
-  if (msg.id == IMD_INFO_GENERAL_ID && msg.len >= 5) {
-    imdRIsoKohm = u16Le(msg.buf[0], msg.buf[1]);
-    imdRIsoStatus = msg.buf[2];
-    imdWarnAlarms = (imdWarnAlarms & 0xFF00u) | msg.buf[4];
-    imdDeviceActivity = (msg.len >= 7) ? msg.buf[6] : IMD_SNV_BYTE;
-    lastImdRxMs = millis();
-    imdCanTimedOut = false;
-    imdFault = tssiFaultFromWarnBits(imdWarnAlarms);
-  } else if (msg.id == IMD_RESPONSE_ID && msg.len >= 3 && msg.buf[0] == IDX_WARN_ALARMS) {
-    imdWarnAlarms = u16Le(msg.buf[1], msg.buf[2]);
-    lastImdRxMs = millis();
-    imdCanTimedOut = false;
-    imdFault = tssiFaultFromWarnBits(imdWarnAlarms);
-  } else {
-    return;
-  }
-
-  if (wasTimedOut) {
-    Serial.println("[TSSI] IMD CAN restored");
-  }
-
-  if (faultDetectionArmed && (imdWarnAlarms != previousWarnings || imdFault != previousFault)) {
-    Serial.print("[TSSI] IMD warn=0x");
-    Serial.print(imdWarnAlarms, HEX);
-    printTssiWarnBits(imdWarnAlarms);
-    Serial.print(" => ");
-    Serial.println(imdFault ? "FAULT, red blink" : "OK, green on");
-    if (imdFault && !previousFault) {
-      showFaultBanner(firstTssiFaultName(imdWarnAlarms));
-    }
-  }
-}
-
 void handlePm100Temperatures1Frame(const CAN_message_t &msg) {
   if (msg.len < 8) {
     return;
@@ -3815,18 +3762,6 @@ void serviceTssi() {
   } else {
     updateTssiLed(anyFaultActive(), now);
   }
-}
-
-void requestImdWarnings() {
-  CAN_message_t tx = {};
-  tx.id = IMD_REQUEST_ID;
-  tx.len = 8;
-  tx.flags.extended = 0;
-  tx.buf[0] = IDX_WARN_ALARMS;
-  for (int i = 1; i < 8; i++) {
-    tx.buf[i] = 0xFF;
-  }
-  sendCanFrame(tx);
 }
 
 void updateTssiLed(bool faultActive, uint32_t now) {
