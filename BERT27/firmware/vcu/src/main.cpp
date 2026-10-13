@@ -9,6 +9,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include "pins.h"
 
 /*
   BERT26 VCU integrated sketch
@@ -23,40 +24,9 @@
       (DERInnnn.BIN), and per-cell (CELLnnnn.BIN) files on the built-in SD card.
 */
 
-// ---------------- Display / touch pins ----------------
-static const int TFT_MISO = 12;
-static const int TFT_MOSI = 11;
-static const int TFT_SCK  = 13;
-static const int TFT_DC   = 8;
-static const int TFT_CS   = 10;
-static const int TFT_RST  = 9;
-static const int TFT_LED  = 29;
-
-static const int TOUCH_CS   = 7;
-static const int TOUCH_IRQ  = 6;
-
 ST7796_t3 tft(TFT_CS, TFT_DC, TFT_RST);
 XPT2046_Touchscreen ts(TOUCH_CS, TOUCH_IRQ);
 
-// ---------------- Vehicle IO ----------------
-static const int READY_BUTTON_PIN = 23;
-static const int BUZZER_PIN       = 22;    // Change here if the buzzer is wired elsewhere.
-static const int BRAKE_LIGHT_PIN  = 5;     // HIGH = brake light on
-static const int FAN_1_PIN        = 1;
-static const int FAN_2_PIN        = 2;
-
-// Shutdown-circuit status inputs: HIGH = signal OK (green), LOW = tripped (red).
-static const int BSPD_STATUS_PIN  = 24;
-static const int IMD_STATUS_PIN   = 25;
-static const int BMS_STATUS_PIN   = 28;
-
-// HV battery current sensor analog input; sampled into the fast data log.
-static const int HV_CURRENT_SENSE_PIN = 14;
-
-// MPU6050 IMU on the default Wire pins (18=SDA, 19=SCL). The sensor's INT pin
-// is wired to 33 and configured as data-ready, but samples are polled at the
-// fast-log rate so the interrupt is informational only.
-static const int IMU_INT_PIN = 33;
 static constexpr uint8_t MPU6050_I2C_ADDR = 0x68;
 static constexpr uint32_t IMU_I2C_CLOCK_HZ = 400000;
 static constexpr uint8_t MPU6050_REG_SMPLRT_DIV   = 0x19;
@@ -85,12 +55,6 @@ static const float FAN_TEMP_MIN_C = 25.0f;
 static const float FAN_TEMP_MAX_C = 40.0f;
 static const int FAN_DUTY_MIN_PERCENT = 20;
 static const int FAN_DUTY_MAX_PERCENT = 100;
-
-// EURO-XPD analog input pins from VCU_Pedal_Read_Test.
-static const int APPS_1_PIN = 38;         // Inverted channel
-static const int APPS_2_PIN = 41;         // Normal channel
-static const int BSE_1_PIN  = 17;
-static const int BSE_2_PIN  = 16;
 
 static const int ADC_RESOLUTION_BITS = 12;
 static const int ADC_MAX_COUNTS      = (1 << ADC_RESOLUTION_BITS) - 1;
@@ -335,10 +299,6 @@ static constexpr uint16_t IMD_SNV_WORD        = 0xFFFF;
 static constexpr uint8_t IMD_SNV_BYTE         = 0xFF;
 static constexpr int32_t IMD_VOLTAGE_OFFSET   = 32128;
 static constexpr float IMD_VOLTAGE_SCALE      = 0.05f;
-
-// TSSI LED pins: low-side switches, HIGH = transistor on = LED on.
-static const int TSSI_LED_RED   = 3;
-static const int TSSI_LED_GREEN = 4;
 
 static constexpr uint32_t TSSI_BLINK_PERIOD_MS    = 500;  // 2 Hz
 static constexpr uint32_t TSSI_BLINK_ON_MS        = 250;
