@@ -14,6 +14,7 @@
 #include "calibration.h"
 #include "can_bytes.h"
 #include "vehicle_speed.h"
+#include "buzzer.h"
 
 /*
   BERT26 VCU integrated sketch
@@ -468,19 +469,6 @@ volatile uint8_t pm100TxLogHead = 0;
 volatile uint8_t pm100TxLogTail = 0;
 volatile uint32_t pm100TxLogDropped = 0;
 
-// ---------------- Buzzer sequencer ----------------
-struct ToneStep {
-  uint16_t frequencyHz;
-  uint16_t onMs;
-  uint16_t offMs;
-};
-
-static const ToneStep TS_READY_CHIME_PATTERN[] = {
-  {1568, 200, 0},
-  {1047, 100, 0},
-  {1319, 300, 1500}
-};
-
 // EV.10.2: ready-to-drive sound, 1-3 seconds. Solid continuous tone for the
 // first 1.25 s (satisfies the >=1 s continuous requirement), then a short
 // playful flourish. Step on+off times sum to 2000 ms total.
@@ -491,13 +479,6 @@ static const ToneStep RTD_PATTERN[] = {
   {2637,  120, 40},  // E7
   {3136,  270,  0}   // G7 - final flourish
 };
-
-const ToneStep *activeTonePattern = nullptr;
-uint8_t activeToneLength = 0;
-uint8_t activeToneIndex = 0;
-bool activeToneInGap = false;
-bool activeToneRepeats = false;
-uint32_t activeToneDeadlineMs = 0;
 
 typedef void (*CanTranslationPrinter)(const CAN_message_t &msg);
 
@@ -699,9 +680,6 @@ const char *rtdStateName(RtdState state);
 void setDriveMode(char newDriveMode);
 uint8_t pm100DirectionByteForMode(char mode);
 
-void playTonePattern(const ToneStep *pattern, uint8_t length, bool repeats);
-void serviceBuzzer();
-void stopBuzzer();
 
 static const CanFrameTranslation CAN_FRAME_TRANSLATIONS[] = {
   {BMS_STATUS_2026_ID,        "BMS Status",        printBmsStatus2026Translation},
@@ -4824,83 +4802,4 @@ void setDriveMode(char newDriveMode) {
 uint8_t pm100DirectionByteForMode(char mode) {
   (void)mode;
   return 0x00;
-}
-
-// ---------------- Buzzer ----------------
-void playTonePattern(const ToneStep *pattern, uint8_t length, bool repeats) {
-  if (pattern == nullptr || length == 0) {
-    return;
-  }
-
-  activeTonePattern = pattern;
-  activeToneLength = length;
-  activeToneIndex = 0;
-  activeToneInGap = false;
-  activeToneRepeats = repeats;
-  activeToneDeadlineMs = millis() + activeTonePattern[0].onMs;
-  tone(BUZZER_PIN, activeTonePattern[0].frequencyHz);
-}
-
-void serviceBuzzer() {
-  // 3-tone RTD-ready chime disabled for testing.
-  // bool shouldChimeForRtd = readyForRtdButton();
-  //
-  // if (activeTonePattern != RTD_PATTERN) {
-  //   if (shouldChimeForRtd) {
-  //     if (activeTonePattern != TS_READY_CHIME_PATTERN) {
-  //       playTonePattern(TS_READY_CHIME_PATTERN,
-  //                       sizeof(TS_READY_CHIME_PATTERN) / sizeof(TS_READY_CHIME_PATTERN[0]),
-  //                       true);
-  //     }
-  //   } else if (activeTonePattern == TS_READY_CHIME_PATTERN) {
-  //     stopBuzzer();
-  //     return;
-  //   }
-  // }
-
-  if (activeTonePattern == nullptr) {
-    return;
-  }
-
-  uint32_t now = millis();
-  if ((int32_t)(now - activeToneDeadlineMs) < 0) {
-    return;
-  }
-
-  const ToneStep &step = activeTonePattern[activeToneIndex];
-
-  if (!activeToneInGap && step.offMs > 0) {
-    noTone(BUZZER_PIN);
-    activeToneInGap = true;
-    activeToneDeadlineMs = now + step.offMs;
-    return;
-  }
-
-  activeToneIndex++;
-  activeToneInGap = false;
-
-  if (activeToneIndex >= activeToneLength) {
-    if (activeToneRepeats) {
-      activeToneIndex = 0;
-      activeToneInGap = false;
-      tone(BUZZER_PIN, activeTonePattern[activeToneIndex].frequencyHz);
-      activeToneDeadlineMs = now + activeTonePattern[activeToneIndex].onMs;
-    } else {
-      stopBuzzer();
-    }
-    return;
-  }
-
-  tone(BUZZER_PIN, activeTonePattern[activeToneIndex].frequencyHz);
-  activeToneDeadlineMs = now + activeTonePattern[activeToneIndex].onMs;
-}
-
-void stopBuzzer() {
-  noTone(BUZZER_PIN);
-  activeTonePattern = nullptr;
-  activeToneLength = 0;
-  activeToneIndex = 0;
-  activeToneInGap = false;
-  activeToneRepeats = false;
-  activeToneDeadlineMs = 0;
 }
