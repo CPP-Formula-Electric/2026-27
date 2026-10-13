@@ -13,6 +13,7 @@
 #include "safety_limits.h"
 #include "calibration.h"
 #include "can_bytes.h"
+#include "vehicle_speed.h"
 
 /*
   BERT26 VCU integrated sketch
@@ -390,10 +391,6 @@ bool pm100Fault = false;
 uint8_t pm100FaultClearAttempts = 0;
 uint32_t pm100FaultClearLastTxMs = 0;
 int16_t motorRpm = 0;
-float speedMph = 0.0f;
-float speedKmh = 0.0f;
-float cumulativeDistanceKm = 0.0f;
-uint32_t lastDistanceUpdateMs = 0;
 
 // ---- Energy Meter decoded state ----
 // Populated from 0x10D / 0x40D / 0x60D. "have" flags gate the dashboard so an
@@ -679,7 +676,6 @@ bool regenVoltageWindowMaximums(uint32_t nowMs, float &maxTerminalV,
                                 float &maxEstimatedOpenCircuitV);
 float regenCellChargeCurrentLimitA(uint32_t nowMs);
 float calculateRegenTorqueNm();
-void updateCumulativeDistance(uint32_t nowMs);
 void logAppsTelemetry();
 float scalePercentNormal(int rawValue, int rawMin, int rawMax);
 float scalePercentInverted(int rawValue, int rawMin, int rawMax);
@@ -4574,16 +4570,6 @@ float calculateRegenTorqueNm() {
     if (torqueNm > powerTorqueCapNm) torqueNm = powerTorqueCapNm;
   }
   return constrain(torqueNm, 0.0f, REGEN_MAX_TORQUE_NM);
-}
-
-// Integrate the RPM-derived road speed. This is intentionally approximate:
-// MPH_PER_RPM already embodies the vehicle's gearing and tire circumference.
-void updateCumulativeDistance(uint32_t nowMs) {
-  if (lastDistanceUpdateMs != 0) {
-    float elapsedHours = (float)(nowMs - lastDistanceUpdateMs) / 3600000.0f;
-    cumulativeDistanceKm += speedKmh * elapsedHours;
-  }
-  lastDistanceUpdateMs = nowMs;
 }
 
 float scalePercentNormal(int rawValue, int rawMin, int rawMax) {
