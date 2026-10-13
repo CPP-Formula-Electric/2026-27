@@ -17,6 +17,7 @@
 #include "buzzer.h"
 #include "fans.h"
 #include "imu.h"
+#include "energy_meter.h"
 #include "main.h"
 
 /*
@@ -158,14 +159,7 @@ static constexpr uint32_t CELL_VOLTAGE_DUMP_WAIT_MS = 250;
 static constexpr uint32_t EM_MEASUREMENT_ID = 0x10D;  // 20 ms:  Current[A], Voltage[V] floats
 static constexpr uint32_t EM_STATUS_ID      = 0x40D;  // 100 ms: status bits + Energy[Whr] float
 static constexpr uint32_t EM_TEMPERATURE_ID = 0x60D;  // 250 ms: muxed module temperatures
-// 0x40D status byte 0 bit masks.
-static constexpr uint8_t EM_STATUS_VIOLATION    = 1u << 0;
-static constexpr uint8_t EM_STATUS_LOGGING      = 1u << 1;
-static constexpr uint8_t EM_STATUS_FAULT_ACTIVE = 1u << 2;
-static constexpr uint8_t EM_STATUS_FAULT_PREV   = 1u << 3;
 static constexpr float EM_TEMP_SCALE_C = 0.5f;        // degC = raw * 0.5
-// The fastest EM frame is 20 ms; flag a comms fault if nothing arrives for this long.
-static constexpr uint32_t EM_TIMEOUT_MS = 1000;
 
 // Bender iso175 IMD/TSSI frames from VCU_TSSI_CODE_5_31_26.ino.
 static constexpr uint32_t IMD_INFO_GENERAL_ID = 0x37;
@@ -350,22 +344,6 @@ bool pm100Fault = false;
 uint8_t pm100FaultClearAttempts = 0;
 uint32_t pm100FaultClearLastTxMs = 0;
 int16_t motorRpm = 0;
-
-// ---- Energy Meter decoded state ----
-// Populated from 0x10D / 0x40D / 0x60D. "have" flags gate the dashboard so an
-// absent meter shows "--"/"NO COMMS" instead of stale zeros.
-float emCurrentA = 0.0f;
-float emVoltageV = 0.0f;
-bool haveEmMeasurement = false;
-uint8_t emStatusByte = 0;
-bool haveEmStatus = false;
-uint8_t emNumSensors = 0;
-uint8_t emMinTempRaw = 0;
-uint8_t emMaxTempRaw = 0;
-bool haveEmTempSummary = false;
-bool haveEmTemps = false;
-uint32_t emLastRxMs = 0;
-bool emTimedOut = true;
 
 bool bmsActive = false;
 bool bmsFault = true;
@@ -580,11 +558,6 @@ void handlePm100VoltageInfoFrame(const CAN_message_t &msg);
 void handlePm100InternalVoltagesFrame(const CAN_message_t &msg);
 void handlePm100FaultCodesFrame(const CAN_message_t &msg);
 void handlePm100ParamResponseFrame(const CAN_message_t &msg);
-void handleEmMeasurementFrame(const CAN_message_t &msg);
-void handleEmStatusFrame(const CAN_message_t &msg);
-void handleEmTemperatureFrame(const CAN_message_t &msg);
-void serviceEnergyMeterTimeout(uint32_t now);
-const char *emStatusSummaryText(uint16_t &colorOut);
 void servicePm100BroadcastEnable();
 void sendPm100BroadcastEnable();
 void servicePm100FaultClear();
@@ -3666,86 +3639,6 @@ void handlePm100ParamResponseFrame(const CAN_message_t &msg) {
     Serial.print("[PM100] Fault clear command ");
     Serial.println(msg.buf[2] ? "accepted" : "REJECTED");
   }
-}
-
-// ---------------- Energy Meter ----------------
-// 0x10D Measurement: Current[A] float (bytes 0-3), Voltage[V] float (bytes 4-7).
-void handleEmMeasurementFrame(const CAN_message_t &msg) {
-  emLastRxMs = millis();
-  emTimedOut = false;
-  if (msg.len < 8) {
-    return;
-  }
-  emCurrentA = f32Le(&msg.buf[0]);
-  emVoltageV = f32Le(&msg.buf[4]);
-  haveEmMeasurement = true;
-  screenDirty = true;
-}
-
-// 0x40D Status: byte 0 holds the status bits (bytes 1-4 are Energy[Whr], unused
-// on the dashboard).
-void handleEmStatusFrame(const CAN_message_t &msg) {
-  emLastRxMs = millis();
-  emTimedOut = false;
-  if (msg.len < 1) {
-    return;
-  }
-  emStatusByte = msg.buf[0];
-  haveEmStatus = true;
-  screenDirty = true;
-}
-
-// 0x60D Temperature: byte 0 bits 0-2 = multiplexor, bits 3-7 = sensor count.
-// The mux-0 frame carries the count plus min/max in bytes 1/2 (degC = raw*0.5),
-// which is all the dashboard needs.
-void handleEmTemperatureFrame(const CAN_message_t &msg) {
-  emLastRxMs = millis();
-  emTimedOut = false;
-  if (msg.len < 8) {
-    return;
-  }
-  if ((msg.buf[0] & 0x07) == 0) {
-    emNumSensors = msg.buf[0] >> 3;
-    emMinTempRaw = msg.buf[1];
-    emMaxTempRaw = msg.buf[2];
-    haveEmTempSummary = true;
-  }
-  haveEmTemps = true;
-  screenDirty = true;
-}
-
-// Flags the EM comms-lost condition once nothing has arrived for EM_TIMEOUT_MS.
-void serviceEnergyMeterTimeout(uint32_t now) {
-  if (!haveEmMeasurement && !haveEmStatus && !haveEmTemps) {
-    return;  // never seen the meter yet; stays "NO COMMS" without a timeout edge
-  }
-  emTimedOut = (now - emLastRxMs > EM_TIMEOUT_MS);
-}
-
-// One-glance EM health string for the main dashboard, with a colour out-param.
-const char *emStatusSummaryText(uint16_t &colorOut) {
-  if (emTimedOut || (!haveEmStatus && !haveEmMeasurement)) {
-    colorOut = ST7735_YELLOW;
-    return "NO COMMS";
-  }
-  if (haveEmStatus && (emStatusByte & EM_STATUS_FAULT_ACTIVE)) {
-    colorOut = ST7735_RED;
-    return "FAULT";
-  }
-  if (haveEmStatus && (emStatusByte & EM_STATUS_VIOLATION)) {
-    colorOut = ST7735_RED;
-    return "VIOLATION";
-  }
-  if (haveEmStatus && (emStatusByte & EM_STATUS_LOGGING)) {
-    colorOut = ST7735_GREEN;
-    return "LOGGING";
-  }
-  if (haveEmStatus && (emStatusByte & EM_STATUS_FAULT_PREV)) {
-    colorOut = ST7735_YELLOW;
-    return "IDLE/PFLT";
-  }
-  colorOut = ST7735_YELLOW;
-  return "IDLE";
 }
 
 // The 0x0A9 Internal Voltages broadcast (GLV voltage source) can be disabled

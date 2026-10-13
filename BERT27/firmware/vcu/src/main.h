@@ -33,4 +33,7 @@ void appendSdLog(File &file, bool measuredLog, const void *data, size_t len);
 // Owned by can_trace (V22). Used by imu.
 void printCanHexByte(uint8_t value);
 
+// Owned by dashboard (V26). Used by energy_meter.
+extern bool screenDirty;
+
 #endif  // VCU_MAIN_H
