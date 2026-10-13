@@ -24,7 +24,27 @@ extern int16_t pm100MotorTempTenthsC;
 extern bool haveInverterTemp;
 extern bool havePm100MotorTemp;
 
-// Owned by data_log (V21). Used by imu.
+// Owned by vehicle_can (V13). Used by imd, bms_link.
+static constexpr uint32_t IMD_INFO_GENERAL_ID = 0x37;
+static constexpr uint32_t IMD_RESPONSE_ID     = 0x23;
+void sendCanFrame(CAN_message_t &msg);
+
+// Owned by faults (V14). Used by imd, bms_link.
+bool bmsImdFaultDetectionArmed();
+bool anyFaultActive();
+
+// Owned by regen (V16). Used by bms_link.
+bool pushRegenVoltageSample(uint32_t nowMs);
+
+// Owned by rtd (V19). Used by bms_link.
+const char *rtdDropCauseText();
+void dropReadyToDrive(const char *reason);
+
+// Owned by tssi (V20). Used by imd.
+bool tssiFaultFromWarnBits(uint16_t warnBits);
+void printTssiWarnBits(uint16_t bits);
+
+// Owned by data_log (V21). Used by imu, bms_link.
 struct __attribute__((packed)) MeasuredImuRecord {
   float type, timeSeconds;
   float accelXG, accelYG, accelZG;
@@ -32,30 +52,22 @@ struct __attribute__((packed)) MeasuredImuRecord {
 };
 extern File sdMeasuredLogFile;
 void appendSdLog(File &file, bool measuredLog, const void *data, size_t len);
+extern bool sdLogActive;
 
-// Owned by can_trace (V22). Used by imu.
+// Owned by can_trace (V22). Used by imu, bms_link.
 void printCanHexByte(uint8_t value);
-
-// Owned by dashboard (V26). Used by energy_meter, imd.
-extern bool screenDirty;
-void showFaultBanner(const char *text);
-
-// Owned by vehicle_can (V13). Used by imd.
-static constexpr uint32_t IMD_INFO_GENERAL_ID = 0x37;
-static constexpr uint32_t IMD_RESPONSE_ID     = 0x23;
-void sendCanFrame(CAN_message_t &msg);
+static constexpr uint8_t CELL_DATA_REQUEST_TEMPERATURES = 0x02;
+static constexpr uint8_t CELL_DATA_REQUEST_VOLTAGES     = 0x01;
 
 // Owned by can_trace_imd (V23). Used by imd.
 static constexpr uint8_t IMD_SNV_BYTE         = 0xFF;
 
-// Owned by faults (V14). Used by imd.
-bool bmsImdFaultDetectionArmed();
-
-// Owned by tssi (V20). Used by imd.
-bool tssiFaultFromWarnBits(uint16_t warnBits);
-void printTssiWarnBits(uint16_t bits);
-
-// Owned by fault_text (V25). Used by imd.
+// Owned by fault_text (V25). Used by imd, bms_link.
 const char *firstTssiFaultName(uint16_t bits);
+const char *bmsTemperatureFaultCodeName(uint8_t faultCode);
+
+// Owned by dashboard (V26). Used by energy_meter, imd, bms_link.
+extern bool screenDirty;
+void showFaultBanner(const char *text);
 
 #endif  // VCU_MAIN_H
