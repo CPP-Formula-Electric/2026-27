@@ -12,6 +12,7 @@
 #include "pins.h"
 #include "safety_limits.h"
 #include "calibration.h"
+#include "can_bytes.h"
 
 /*
   BERT26 VCU integrated sketch
@@ -731,32 +732,6 @@ static const CanFrameTranslation CAN_FRAME_TRANSLATIONS[] = {
 
 static constexpr uint8_t CAN_FRAME_TRANSLATION_COUNT =
     sizeof(CAN_FRAME_TRANSLATIONS) / sizeof(CAN_FRAME_TRANSLATIONS[0]);
-
-static inline uint16_t u16Le(uint8_t lo, uint8_t hi) {
-  return (uint16_t)lo | ((uint16_t)hi << 8);
-}
-
-static inline uint16_t u16Be(uint8_t hi, uint8_t lo) {
-  return ((uint16_t)hi << 8) | (uint16_t)lo;
-}
-
-static inline uint32_t u32Le(uint8_t b0, uint8_t b1, uint8_t b2, uint8_t b3) {
-  return (uint32_t)b0 | ((uint32_t)b1 << 8) |
-         ((uint32_t)b2 << 16) | ((uint32_t)b3 << 24);
-}
-
-static inline int16_t s16Le(uint8_t lo, uint8_t hi) {
-  return (int16_t)u16Le(lo, hi);
-}
-
-// IEEE-754 32-bit float, little-endian on the wire. The Teensy 4.1 is also
-// little-endian, so the four bytes copy straight into a float. Used for the
-// Energy Meter Current / Voltage / Energy signals.
-static inline float f32Le(const uint8_t *b) {
-  float value;
-  memcpy(&value, b, sizeof(value));
-  return value;
-}
 
 // ---------------- Setup ----------------
 void setup() {
