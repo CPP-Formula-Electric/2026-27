@@ -18,13 +18,11 @@
 // Full type is in FlexCAN_T4.h; declared here so this header stays light.
 struct CAN_message_t;
 
-// Owned by inverter_command (V18). Used by pedals.
-extern float commandedTorqueNm;
-
-// Owned by rtd (V19). Used by bms_link, inverter.
+// Owned by rtd (V19). Used by bms_link, inverter, inverter_command.
 const char *rtdDropCauseText();
 void dropReadyToDrive(const char *reason);
 extern bool readyToDriveLatched;
+extern char driveMode;
 
 // Owned by tssi (V20). Used by imd.
 bool tssiFaultFromWarnBits(uint16_t warnBits);
