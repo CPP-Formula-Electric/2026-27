@@ -28,6 +28,7 @@
 #include "pedals.h"
 #include "inverter_command.h"
 #include "rtd.h"
+#include "tssi.h"
 #include "main.h"
 
 /*
@@ -67,8 +68,6 @@ static constexpr uint32_t IMD_FALLBACK_REQUEST_ID = 0x0FF;
 static constexpr uint16_t IMD_SNV_WORD        = 0xFFFF;
 static constexpr int32_t IMD_VOLTAGE_OFFSET   = 32128;
 static constexpr float IMD_VOLTAGE_SCALE      = 0.05f;
-
-static constexpr uint32_t IMD_GET_REQ_PERIOD_MS    = 500;
 
 // ---------------- Data logging ----------------
 // Three binary files are created for each session: MEASnnnn.BIN contains values
@@ -155,13 +154,6 @@ size_t derivedLogBufferLen = 0;
 size_t cellLogBufferLen = 0;
 
 uint8_t lastCellDataRequestType = CELL_DATA_REQUEST_UNKNOWN;
-
-uint32_t tssiBlinkTimerMs = 0;
-bool tssiRedOn = false;
-// Once the TSSI has blinked red for any fault it stays latched in the red-blink
-// state until the board is power-cycled (this flag clears on reset).
-bool tssiFaultLatched = false;
-uint32_t lastImdGetReqMs = 0;
 
 // Fault banner: a red strip over the drive-button row naming the most recent
 // fault, shown for FAULT_BANNER_DURATION_MS after each fault event.
@@ -286,15 +278,6 @@ void printImdPercentValue(uint8_t value);
 void printImdCounterValue(uint8_t value);
 void printCellVoltageValue(uint16_t millivolts);
 void printCanHexByte(uint8_t value);
-bool tssiFaultFromWarnBits(uint16_t warnBits);
-void setupTssi();
-void serviceTssi();
-void updateTssiLed(bool faultActive, uint32_t now);
-void setTssiGreenOn();
-void setTssiRedOn();
-void setTssiRedOff();
-void setTssiAllOff();
-void printTssiWarnBits(uint16_t bits);
 
 void showFaultBanner(const char *text);
 void serviceFaultBanner();
@@ -2749,116 +2732,6 @@ void printCanHexByte(uint8_t value) {
     Serial.print('0');
   }
   Serial.print(value, HEX);
-}
-
-bool tssiFaultFromWarnBits(uint16_t warnBits) {
-  return (warnBits & IMD_FAULT_BITS_MASK) != 0;
-}
-
-void setupTssi() {
-  pinMode(TSSI_LED_RED, OUTPUT);
-  pinMode(TSSI_LED_GREEN, OUTPUT);
-  setTssiAllOff();
-
-  imdFault = true;
-  imdCanTimedOut = true;
-  lastImdRxMs = millis();
-  tssiBlinkTimerMs = millis();
-  lastImdGetReqMs = 0;
-}
-
-void serviceTssi() {
-  uint32_t now = millis();
-  bool faultDetectionArmed = bmsImdFaultDetectionArmed();
-
-  if (faultDetectionArmed && now - lastImdRxMs > IMD_HEARTBEAT_TIMEOUT_MS) {
-    if (!imdCanTimedOut) {
-      Serial.println("[TSSI] IMD heartbeat lost, forcing FAULT");
-      showFaultBanner("IMD Timeout");
-    }
-    imdCanTimedOut = true;
-    imdFault = true;
-  }
-
-  if ((anyFaultActive() || contactorsOpen()) && readyToDriveLatched) {
-    dropReadyToDrive(rtdDropCauseText());
-  }
-
-  if (now - lastImdGetReqMs >= IMD_GET_REQ_PERIOD_MS) {
-    lastImdGetReqMs = now;
-    requestImdWarnings();
-  }
-
-  // Latch the red blink the first time a fault is seen; once latched the TSSI
-  // stays red until power cycle, even if the underlying fault clears.
-  if (faultDetectionArmed && anyFaultActive()) {
-    tssiFaultLatched = true;
-  }
-
-  if (tssiFaultLatched) {
-    updateTssiLed(true, now);
-  } else if (!faultDetectionArmed) {
-    setTssiGreenOn();
-  } else {
-    updateTssiLed(anyFaultActive(), now);
-  }
-}
-
-void updateTssiLed(bool faultActive, uint32_t now) {
-  if (faultActive) {
-    uint32_t elapsed = now - tssiBlinkTimerMs;
-    if (elapsed >= TSSI_BLINK_PERIOD_MS) {
-      tssiBlinkTimerMs += TSSI_BLINK_PERIOD_MS;
-      elapsed = now - tssiBlinkTimerMs;
-    }
-
-    if (elapsed < TSSI_BLINK_ON_MS) {
-      if (!tssiRedOn) {
-        setTssiRedOn();
-      }
-    } else if (tssiRedOn) {
-      setTssiRedOff();
-    }
-  } else {
-    setTssiGreenOn();
-  }
-}
-
-void setTssiGreenOn() {
-  digitalWrite(TSSI_LED_RED, LOW);
-  digitalWrite(TSSI_LED_GREEN, HIGH);
-  tssiRedOn = false;
-}
-
-void setTssiRedOn() {
-  digitalWrite(TSSI_LED_GREEN, LOW);
-  digitalWrite(TSSI_LED_RED, HIGH);
-  tssiRedOn = true;
-}
-
-void setTssiRedOff() {
-  digitalWrite(TSSI_LED_RED, LOW);
-  tssiRedOn = false;
-}
-
-void setTssiAllOff() {
-  digitalWrite(TSSI_LED_GREEN, LOW);
-  digitalWrite(TSSI_LED_RED, LOW);
-  tssiRedOn = false;
-}
-
-void printTssiWarnBits(uint16_t bits) {
-  if (bits & (1u << 0)) Serial.print(" [DeviceError]");
-  if (bits & (1u << 1)) Serial.print(" [HV+ConnFail]");
-  if (bits & (1u << 2)) Serial.print(" [HV-ConnFail]");
-  if (bits & (1u << 3)) Serial.print(" [EarthConnFail]");
-  if (bits & (1u << 4)) Serial.print(" [IsoAlarm]");
-  if (bits & (1u << 5)) Serial.print(" [IsoWarning]");
-  if (bits & (1u << 6)) Serial.print(" [IsoOutdated]");
-  if (bits & (1u << 7)) Serial.print(" [UnbalanceAlarm]");
-  if (bits & (1u << 8)) Serial.print(" [Undervoltage]");
-  if (bits & (1u << 9)) Serial.print(" [UnsafeToStart]");
-  if (bits & (1u << 10)) Serial.print(" [EarthliftOpen]");
 }
 
 void showFaultBanner(const char *text) {

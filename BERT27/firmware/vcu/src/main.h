@@ -18,10 +18,6 @@
 // Full type is in FlexCAN_T4.h; declared here so this header stays light.
 struct CAN_message_t;
 
-// Owned by tssi (V20). Used by imd.
-bool tssiFaultFromWarnBits(uint16_t warnBits);
-void printTssiWarnBits(uint16_t bits);
-
 // Owned by data_log (V21). Used by imu, bms_link, vehicle_can.
 struct __attribute__((packed)) MeasuredImuRecord {
   float type, timeSeconds;
@@ -48,7 +44,7 @@ const char *firstTssiFaultName(uint16_t bits);
 const char *bmsTemperatureFaultCodeName(uint8_t faultCode);
 const char *firstPm100FaultName(uint32_t postFaults, uint32_t runFaults);
 
-// Owned by dashboard (V26). Used by energy_meter, imd, bms_link, inverter, pedals, rtd.
+// Owned by dashboard (V26). Used by energy_meter, imd, bms_link, inverter, pedals, rtd, tssi.
 extern bool screenDirty;
 void showFaultBanner(const char *text);
 

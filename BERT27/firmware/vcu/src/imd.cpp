@@ -13,6 +13,7 @@
 #include "main.h"
 #include "vehicle_can.h"
 #include "faults.h"
+#include "tssi.h"
 
 bool imdFault = true;
 uint16_t imdWarnAlarms = 0;
