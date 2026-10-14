@@ -16,6 +16,7 @@
 #include "pins.h"
 #include "can_bytes.h"
 #include "main.h"
+#include "data_log.h"
 
 bool initImu();
 bool readImuSample();

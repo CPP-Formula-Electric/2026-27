@@ -18,33 +18,24 @@
 // Full type is in FlexCAN_T4.h; declared here so this header stays light.
 struct CAN_message_t;
 
-// Owned by data_log (V21). Used by imu, bms_link, vehicle_can.
-struct __attribute__((packed)) MeasuredImuRecord {
-  float type, timeSeconds;
-  float accelXG, accelYG, accelZG;
-  float gyroXDps, gyroYDps, gyroZDps, temperatureC;
-};
-extern File sdMeasuredLogFile;
-void appendSdLog(File &file, bool measuredLog, const void *data, size_t len);
-extern bool sdLogActive;
-void writeCellDataResponseLog(const CAN_message_t &msg);
-
-// Owned by can_trace (V22). Used by imu, bms_link, vehicle_can, rtd.
+// Owned by can_trace (V22). Used by imu, bms_link, vehicle_can, rtd, data_log.
 void printCanHexByte(uint8_t value);
 static constexpr uint8_t CELL_DATA_REQUEST_TEMPERATURES = 0x02;
 static constexpr uint8_t CELL_DATA_REQUEST_VOLTAGES     = 0x01;
 void updateCanTranslationState(const char *direction, const CAN_message_t &msg);
 void logCanTranslationToSerial(const char *direction, const CAN_message_t &msg);
+extern uint8_t lastCellDataRequestType;
 
-// Owned by can_trace_imd (V23). Used by imd.
+// Owned by can_trace_imd (V23). Used by imd, data_log.
 static constexpr uint8_t IMD_SNV_BYTE         = 0xFF;
+static constexpr uint16_t IMD_SNV_WORD        = 0xFFFF;
 
 // Owned by fault_text (V25). Used by imd, bms_link, inverter, rtd.
 const char *firstTssiFaultName(uint16_t bits);
 const char *bmsTemperatureFaultCodeName(uint8_t faultCode);
 const char *firstPm100FaultName(uint32_t postFaults, uint32_t runFaults);
 
-// Owned by dashboard (V26). Used by energy_meter, imd, bms_link, inverter, pedals, rtd, tssi.
+// Owned by dashboard (V26). Used by energy_meter, imd, bms_link, inverter, pedals, rtd, tssi, data_log.
 extern bool screenDirty;
 void showFaultBanner(const char *text);
 
