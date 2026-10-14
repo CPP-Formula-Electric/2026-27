@@ -15,6 +15,7 @@
 #include "inverter.h"
 #include "power_derate.h"
 #include "main.h"
+#include "pedals.h"
 
 static constexpr uint32_t REGEN_VOLTAGE_WINDOW_MS = 10000;
 // A 24-entry ring retains at least 10 seconds at the BMS's 500 ms cadence.

@@ -18,12 +18,8 @@
 // Full type is in FlexCAN_T4.h; declared here so this header stays light.
 struct CAN_message_t;
 
-// Owned by pedals (V17). Used by regen.
-extern bool braking;
-extern bool appsPlausible;
-extern bool bspcActive;
-extern float pedalPct;
-extern float brakePressurePct;
+// Owned by inverter_command (V18). Used by pedals.
+extern float commandedTorqueNm;
 
 // Owned by rtd (V19). Used by bms_link, inverter.
 const char *rtdDropCauseText();
@@ -60,7 +56,7 @@ const char *firstTssiFaultName(uint16_t bits);
 const char *bmsTemperatureFaultCodeName(uint8_t faultCode);
 const char *firstPm100FaultName(uint32_t postFaults, uint32_t runFaults);
 
-// Owned by dashboard (V26). Used by energy_meter, imd, bms_link, inverter.
+// Owned by dashboard (V26). Used by energy_meter, imd, bms_link, inverter, pedals.
 extern bool screenDirty;
 void showFaultBanner(const char *text);
 
