@@ -14,6 +14,7 @@
 #include "main.h"
 #include "vehicle_can.h"
 #include "rtd.h"
+#include "fault_text.h"
 
 void sendPm100BroadcastEnable();
 void sendPm100FaultClear();

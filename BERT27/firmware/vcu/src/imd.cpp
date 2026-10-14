@@ -15,6 +15,7 @@
 #include "faults.h"
 #include "tssi.h"
 #include "can_trace_imd.h"
+#include "fault_text.h"
 
 bool imdFault = true;
 uint16_t imdWarnAlarms = 0;

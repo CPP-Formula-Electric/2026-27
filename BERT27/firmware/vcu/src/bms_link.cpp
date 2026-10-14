@@ -17,6 +17,7 @@
 #include "rtd.h"
 #include "data_log.h"
 #include "can_trace.h"
+#include "fault_text.h"
 
 bool regenBmsPairValid = false;
 

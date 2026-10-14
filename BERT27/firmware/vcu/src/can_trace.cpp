@@ -15,6 +15,7 @@
 #include "inverter_command.h"
 #include "main.h"
 #include "can_trace_imd.h"
+#include "fault_text.h"
 
 static constexpr bool CAN_TRANSLATION_SERIAL_ENABLED = true;
 
