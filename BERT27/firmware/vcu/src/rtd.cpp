@@ -18,6 +18,7 @@
 #include "main.h"
 #include "can_trace.h"
 #include "fault_text.h"
+#include "dashboard.h"
 
 bool rtdInputsReady();
 bool readyForRtdButton();

@@ -23,6 +23,7 @@
 #include "main.h"
 #include "can_trace.h"
 #include "can_trace_imd.h"
+#include "dashboard.h"
 
 static constexpr uint16_t BMS_CELL_COUNT = 96;
 

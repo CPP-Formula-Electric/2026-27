@@ -14,6 +14,7 @@
 
 #include "can_bytes.h"
 #include "main.h"
+#include "dashboard.h"
 
 // 0x40D status byte 0 bit masks.
 static constexpr uint8_t EM_STATUS_VIOLATION    = 1u << 0;

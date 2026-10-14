@@ -13,6 +13,7 @@
 #include "calibration.h"
 #include "main.h"
 #include "inverter_command.h"
+#include "dashboard.h"
 
 float scalePercentNormal(int rawValue, int rawMin, int rawMax);
 float scalePercentInverted(int rawValue, int rawMin, int rawMax);

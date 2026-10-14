@@ -17,7 +17,4 @@
 // Full type is in FlexCAN_T4.h;
 struct CAN_message_t;
 
-extern bool screenDirty;
-void showFaultBanner(const char *text);
-
 #endif  // VCU_MAIN_H
