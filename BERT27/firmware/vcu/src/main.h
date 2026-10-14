@@ -18,10 +18,6 @@
 // Full type is in FlexCAN_T4.h; declared here so this header stays light.
 struct CAN_message_t;
 
-// Owned by faults (V14). Used by imd, bms_link.
-bool bmsImdFaultDetectionArmed();
-bool anyFaultActive();
-
 // Owned by regen (V16). Used by bms_link.
 bool pushRegenVoltageSample(uint32_t nowMs);
 

@@ -12,6 +12,7 @@
 #include "can_bytes.h"
 #include "main.h"
 #include "vehicle_can.h"
+#include "faults.h"
 
 bool imdFault = true;
 uint16_t imdWarnAlarms = 0;

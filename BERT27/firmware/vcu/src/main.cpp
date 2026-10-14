@@ -22,6 +22,7 @@
 #include "bms_link.h"
 #include "inverter.h"
 #include "vehicle_can.h"
+#include "faults.h"
 #include "main.h"
 
 /*
@@ -278,7 +279,6 @@ bool faultBannerDirty = false;
 int backlightBrightness = 255;
 bool screenDirty = true;
 bool dashboardNeedsFullRedraw = true;
-uint32_t startupFaultDelayStartMs = 0;
 
 IntervalTimer pm100CommandTimer;
 volatile int16_t pm100CommandTorqueRaw = 0;
@@ -422,8 +422,6 @@ void printImdCounterValue(uint8_t value);
 void printCellVoltageValue(uint16_t millivolts);
 void printCanHexByte(uint8_t value);
 bool tssiFaultFromWarnBits(uint16_t warnBits);
-bool bmsImdFaultDetectionArmed();
-bool anyFaultActive();
 void setupTssi();
 void serviceTssi();
 void updateTssiLed(bool faultActive, uint32_t now);
@@ -3095,18 +3093,6 @@ void printCanHexByte(uint8_t value) {
 
 bool tssiFaultFromWarnBits(uint16_t warnBits) {
   return (warnBits & IMD_FAULT_BITS_MASK) != 0;
-}
-
-bool bmsImdFaultDetectionArmed() {
-  return (millis() - startupFaultDelayStartMs) >= STARTUP_BMS_IMD_FAULT_DELAY_MS;
-}
-
-bool anyFaultActive() {
-  if (!bmsImdFaultDetectionArmed()) {
-    return false;
-  }
-
-  return imdFault || bmsFault;
 }
 
 void setupTssi() {
