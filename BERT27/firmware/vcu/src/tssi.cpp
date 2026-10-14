@@ -14,7 +14,6 @@
 #include "bms_link.h"
 #include "faults.h"
 #include "rtd.h"
-#include "main.h"
 #include "dashboard.h"
 
 void updateTssiLed(bool faultActive, uint32_t now);

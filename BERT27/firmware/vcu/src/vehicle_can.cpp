@@ -12,7 +12,6 @@
 #include "imd.h"
 #include "bms_link.h"
 #include "inverter.h"
-#include "main.h"
 #include "data_log.h"
 #include "can_trace.h"
 

@@ -17,7 +17,6 @@
 #include "power_derate.h"
 #include "regen.h"
 #include "pedals.h"
-#include "main.h"
 #include "rtd.h"
 
 void pm100CommandTimerIsr();

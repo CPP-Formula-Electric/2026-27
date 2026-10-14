@@ -11,7 +11,6 @@
 #include "safety_limits.h"
 #include "can_bytes.h"
 #include "bms_link.h"
-#include "main.h"
 #include "vehicle_can.h"
 #include "rtd.h"
 #include "fault_text.h"

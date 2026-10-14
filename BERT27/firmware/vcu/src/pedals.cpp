@@ -11,7 +11,6 @@
 #include "pins.h"
 #include "safety_limits.h"
 #include "calibration.h"
-#include "main.h"
 #include "inverter_command.h"
 #include "dashboard.h"
 

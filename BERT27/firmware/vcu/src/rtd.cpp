@@ -15,7 +15,6 @@
 #include "bms_link.h"
 #include "faults.h"
 #include "pedals.h"
-#include "main.h"
 #include "can_trace.h"
 #include "fault_text.h"
 #include "dashboard.h"

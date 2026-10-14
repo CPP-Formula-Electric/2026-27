@@ -10,7 +10,6 @@
 
 #include "safety_limits.h"
 #include "can_bytes.h"
-#include "main.h"
 #include "vehicle_can.h"
 #include "faults.h"
 #include "regen.h"

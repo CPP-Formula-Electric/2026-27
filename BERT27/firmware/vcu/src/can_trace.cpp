@@ -13,7 +13,6 @@
 #include "bms_link.h"
 #include "vehicle_can.h"
 #include "inverter_command.h"
-#include "main.h"
 #include "can_trace_imd.h"
 #include "fault_text.h"
 

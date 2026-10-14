@@ -13,7 +13,6 @@
 #include <ST7796_t3.h>
 
 #include "can_bytes.h"
-#include "main.h"
 #include "dashboard.h"
 
 // 0x40D status byte 0 bit masks.

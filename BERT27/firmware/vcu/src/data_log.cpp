@@ -20,7 +20,6 @@
 #include "pedals.h"
 #include "inverter_command.h"
 #include "rtd.h"
-#include "main.h"
 #include "can_trace.h"
 #include "can_trace_imd.h"
 #include "dashboard.h"
