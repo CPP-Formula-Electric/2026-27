@@ -13,6 +13,7 @@
 #include "main.h"
 #include "vehicle_can.h"
 #include "faults.h"
+#include "regen.h"
 
 bool regenBmsPairValid = false;
 

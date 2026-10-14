@@ -18,8 +18,12 @@
 // Full type is in FlexCAN_T4.h; declared here so this header stays light.
 struct CAN_message_t;
 
-// Owned by regen (V16). Used by bms_link.
-bool pushRegenVoltageSample(uint32_t nowMs);
+// Owned by pedals (V17). Used by regen.
+extern bool braking;
+extern bool appsPlausible;
+extern bool bspcActive;
+extern float pedalPct;
+extern float brakePressurePct;
 
 // Owned by rtd (V19). Used by bms_link, inverter.
 const char *rtdDropCauseText();
