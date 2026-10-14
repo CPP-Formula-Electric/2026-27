@@ -18,12 +18,6 @@
 // Full type is in FlexCAN_T4.h; declared here so this header stays light.
 struct CAN_message_t;
 
-// Owned by rtd (V19). Used by bms_link, inverter, inverter_command.
-const char *rtdDropCauseText();
-void dropReadyToDrive(const char *reason);
-extern bool readyToDriveLatched;
-extern char driveMode;
-
 // Owned by tssi (V20). Used by imd.
 bool tssiFaultFromWarnBits(uint16_t warnBits);
 void printTssiWarnBits(uint16_t bits);
@@ -39,7 +33,7 @@ void appendSdLog(File &file, bool measuredLog, const void *data, size_t len);
 extern bool sdLogActive;
 void writeCellDataResponseLog(const CAN_message_t &msg);
 
-// Owned by can_trace (V22). Used by imu, bms_link, vehicle_can.
+// Owned by can_trace (V22). Used by imu, bms_link, vehicle_can, rtd.
 void printCanHexByte(uint8_t value);
 static constexpr uint8_t CELL_DATA_REQUEST_TEMPERATURES = 0x02;
 static constexpr uint8_t CELL_DATA_REQUEST_VOLTAGES     = 0x01;
@@ -49,12 +43,12 @@ void logCanTranslationToSerial(const char *direction, const CAN_message_t &msg);
 // Owned by can_trace_imd (V23). Used by imd.
 static constexpr uint8_t IMD_SNV_BYTE         = 0xFF;
 
-// Owned by fault_text (V25). Used by imd, bms_link, inverter.
+// Owned by fault_text (V25). Used by imd, bms_link, inverter, rtd.
 const char *firstTssiFaultName(uint16_t bits);
 const char *bmsTemperatureFaultCodeName(uint8_t faultCode);
 const char *firstPm100FaultName(uint32_t postFaults, uint32_t runFaults);
 
-// Owned by dashboard (V26). Used by energy_meter, imd, bms_link, inverter, pedals.
+// Owned by dashboard (V26). Used by energy_meter, imd, bms_link, inverter, pedals, rtd.
 extern bool screenDirty;
 void showFaultBanner(const char *text);
 

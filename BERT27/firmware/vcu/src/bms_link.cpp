@@ -14,6 +14,7 @@
 #include "vehicle_can.h"
 #include "faults.h"
 #include "regen.h"
+#include "rtd.h"
 
 bool regenBmsPairValid = false;
 
