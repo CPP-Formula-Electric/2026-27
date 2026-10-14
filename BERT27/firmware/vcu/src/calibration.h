@@ -3,7 +3,7 @@
  * @brief   Values tuned on the car: pedal ranges, regen, brakes, fans, speed scaling.
  *
  * Board:   VCU (Teensy 4.1)
- * Original Creator: BERT26 software team (VCU_BERT26_TTT-D1_2.ino)
+ * Original Creator: BERT26 software
  * Worked on by: BERT27 restructure
  *
  * Calibration changes are allowed after tech inspection (IN.16.2.3).

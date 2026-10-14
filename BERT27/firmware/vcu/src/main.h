@@ -3,7 +3,7 @@
  * @brief   TEMPORARY: globals still defined in main.cpp that moved modules use.
  *
  * Board:   VCU (Teensy 4.1)
- * Original Creator: BERT26 software team (VCU_BERT26_TTT-D1_2.ino)
+ * Original Creator: BERT26 software
  * Worked on by: BERT27 restructure
  *
  * Each line goes away when the module that owns the variable moves out of
@@ -18,13 +18,7 @@
 // Full type is in FlexCAN_T4.h; declared here so this header stays light.
 struct CAN_message_t;
 
-// Owned by inverter (V12). Used by fans.
-extern int16_t inverterTempTenthsC;
-extern int16_t pm100MotorTempTenthsC;
-extern bool haveInverterTemp;
-extern bool havePm100MotorTemp;
-
-// Owned by vehicle_can (V13). Used by imd, bms_link.
+// Owned by vehicle_can (V13). Used by imd, bms_link, inverter.
 static constexpr uint32_t IMD_INFO_GENERAL_ID = 0x37;
 static constexpr uint32_t IMD_RESPONSE_ID     = 0x23;
 void sendCanFrame(CAN_message_t &msg);
@@ -36,9 +30,10 @@ bool anyFaultActive();
 // Owned by regen (V16). Used by bms_link.
 bool pushRegenVoltageSample(uint32_t nowMs);
 
-// Owned by rtd (V19). Used by bms_link.
+// Owned by rtd (V19). Used by bms_link, inverter.
 const char *rtdDropCauseText();
 void dropReadyToDrive(const char *reason);
+extern bool readyToDriveLatched;
 
 // Owned by tssi (V20). Used by imd.
 bool tssiFaultFromWarnBits(uint16_t warnBits);
@@ -62,11 +57,12 @@ static constexpr uint8_t CELL_DATA_REQUEST_VOLTAGES     = 0x01;
 // Owned by can_trace_imd (V23). Used by imd.
 static constexpr uint8_t IMD_SNV_BYTE         = 0xFF;
 
-// Owned by fault_text (V25). Used by imd, bms_link.
+// Owned by fault_text (V25). Used by imd, bms_link, inverter.
 const char *firstTssiFaultName(uint16_t bits);
 const char *bmsTemperatureFaultCodeName(uint8_t faultCode);
+const char *firstPm100FaultName(uint32_t postFaults, uint32_t runFaults);
 
-// Owned by dashboard (V26). Used by energy_meter, imd, bms_link.
+// Owned by dashboard (V26). Used by energy_meter, imd, bms_link, inverter.
 extern bool screenDirty;
 void showFaultBanner(const char *text);
 

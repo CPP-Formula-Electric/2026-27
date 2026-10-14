@@ -3,7 +3,7 @@
  * @brief   Bender iso175 IMD frames and the warning/alarm poll.
  *
  * Board:   VCU (Teensy 4.1)
- * Original Creator: BERT26 software team (VCU_BERT26_TTT-D1_2.ino)
+ * Original Creator: BERT26 software
  * Worked on by: BERT27 restructure
  * Rules:   FSAE 2027 V1 EV.6.1.7
  */

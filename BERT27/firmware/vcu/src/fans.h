@@ -3,7 +3,7 @@
  * @brief   Sets the cooling fan PWM from motor/inverter temperature.
  *
  * Board:   VCU (Teensy 4.1)
- * Original Creator: BERT26 software team (VCU_BERT26_TTT-D1_2.ino)
+ * Original Creator: BERT26 software
  * Worked on by: BERT27 restructure
  */
 #ifndef VCU_FANS_H

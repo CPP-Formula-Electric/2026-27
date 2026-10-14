@@ -3,14 +3,14 @@
  * @brief   Sets the cooling fan PWM from motor/inverter temperature.
  *
  * Board:   VCU (Teensy 4.1)
- * Original Creator: BERT26 software team (VCU_BERT26_TTT-D1_2.ino)
+ * Original Creator: BERT26 software
  * Worked on by: BERT27 restructure
  */
 #include "fans.h"
 
 #include "pins.h"
 #include "calibration.h"
-#include "main.h"
+#include "inverter.h"
 
 uint8_t dutyPercentToFanPwmWrite(int dutyPercent);
 

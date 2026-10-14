@@ -3,7 +3,7 @@
  * @brief   Little/big-endian byte helpers for unpacking CAN payloads.
  *
  * Board:   VCU (Teensy 4.1)
- * Original Creator: BERT26 software team (VCU_BERT26_TTT-D1_2.ino)
+ * Original Creator: BERT26 software
  * Worked on by: BERT27 restructure
  *
  * BMS frames are big-endian (u16Be); PM100, IMD and Energy Meter frames are

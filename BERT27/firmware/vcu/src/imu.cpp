@@ -3,7 +3,7 @@
  * @brief   Reads the MPU6050 IMU and writes IMU log records.
  *
  * Board:   VCU (Teensy 4.1)
- * Original Creator: BERT26 software team (VCU_BERT26_TTT-D1_2.ino)
+ * Original Creator: BERT26 software
  * Worked on by: BERT27 restructure
  *
  * The MPU6050 is polled at the 100 Hz fast-log rate. If it stops answering,

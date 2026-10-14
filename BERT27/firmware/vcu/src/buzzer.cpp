@@ -3,7 +3,7 @@
  * @brief   Plays tone patterns on the buzzer, such as the ready-to-drive sound.
  *
  * Board:   VCU (Teensy 4.1)
- * Original Creator: BERT26 software team (VCU_BERT26_TTT-D1_2.ino)
+ * Original Creator: BERT26 software
  * Worked on by: BERT27 restructure
  * Rules:   FSAE 2027 V1 EV.10.7
  *

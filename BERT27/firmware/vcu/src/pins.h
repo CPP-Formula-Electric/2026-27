@@ -3,7 +3,7 @@
  * @brief   Every Teensy 4.1 pin the VCU uses, in one place.
  *
  * Board:   VCU (Teensy 4.1)
- * Original Creator: BERT26 software team (VCU_BERT26_TTT-D1_2.ino)
+ * Original Creator: BERT26 software
  * Worked on by: BERT27 restructure
  */
 #ifndef VCU_PINS_H

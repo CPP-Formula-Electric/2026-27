@@ -3,7 +3,7 @@
  * @brief   Rule and safety limits. Changes need a second reviewer.
  *
  * Board:   VCU (Teensy 4.1)
- * Original Creator: BERT26 software team (VCU_BERT26_TTT-D1_2.ino)
+ * Original Creator: BERT26 software
  * Worked on by: BERT27 restructure
  * Rules:   FSAE 2027 V1 T.4.2.4, T.4.2.5, EV.4.7, EV.6.1.7, EV.10.6
  *
