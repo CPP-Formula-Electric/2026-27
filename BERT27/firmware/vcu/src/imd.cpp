@@ -14,6 +14,7 @@
 #include "vehicle_can.h"
 #include "faults.h"
 #include "tssi.h"
+#include "can_trace_imd.h"
 
 bool imdFault = true;
 uint16_t imdWarnAlarms = 0;

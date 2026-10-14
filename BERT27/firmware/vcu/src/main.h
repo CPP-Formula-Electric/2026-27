@@ -15,17 +15,8 @@
 #include <Arduino.h>
 #include <SD.h>
 
-// Full type is in FlexCAN_T4.h; declared here so this header stays light.
+// Full type is in FlexCAN_T4.h;
 struct CAN_message_t;
-
-static constexpr uint8_t IMD_SNV_BYTE         = 0xFF;
-static constexpr uint16_t IMD_SNV_WORD        = 0xFFFF;
-void printImdRequestTranslation(const CAN_message_t &msg);
-void printImdResponseTranslation(const CAN_message_t &msg);
-void printImdInfoGeneralTranslation(const CAN_message_t &msg);
-void printImdInfoIsolationDetailTranslation(const CAN_message_t &msg);
-void printImdInfoVoltageTranslation(const CAN_message_t &msg);
-void printImdInfoItSystemTranslation(const CAN_message_t &msg);
 
 const char *firstTssiFaultName(uint16_t bits);
 const char *bmsTemperatureFaultCodeName(uint8_t faultCode);
