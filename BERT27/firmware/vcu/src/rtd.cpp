@@ -16,6 +16,7 @@
 #include "faults.h"
 #include "pedals.h"
 #include "main.h"
+#include "can_trace.h"
 
 bool rtdInputsReady();
 bool readyForRtdButton();

@@ -14,6 +14,7 @@
 #include "inverter.h"
 #include "main.h"
 #include "data_log.h"
+#include "can_trace.h"
 
 void dispatchReceivedCanFrame(const CAN_message_t &msg);
 void logCanFrameToSerial(const char *direction, const CAN_message_t &msg);

@@ -21,6 +21,7 @@
 #include "inverter_command.h"
 #include "rtd.h"
 #include "main.h"
+#include "can_trace.h"
 
 static constexpr uint16_t BMS_CELL_COUNT = 96;
 
