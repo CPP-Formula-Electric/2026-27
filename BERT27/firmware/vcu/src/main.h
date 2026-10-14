@@ -18,11 +18,6 @@
 // Full type is in FlexCAN_T4.h; declared here so this header stays light.
 struct CAN_message_t;
 
-// Owned by vehicle_can (V13). Used by imd, bms_link, inverter.
-static constexpr uint32_t IMD_INFO_GENERAL_ID = 0x37;
-static constexpr uint32_t IMD_RESPONSE_ID     = 0x23;
-void sendCanFrame(CAN_message_t &msg);
-
 // Owned by faults (V14). Used by imd, bms_link.
 bool bmsImdFaultDetectionArmed();
 bool anyFaultActive();
@@ -39,7 +34,7 @@ extern bool readyToDriveLatched;
 bool tssiFaultFromWarnBits(uint16_t warnBits);
 void printTssiWarnBits(uint16_t bits);
 
-// Owned by data_log (V21). Used by imu, bms_link.
+// Owned by data_log (V21). Used by imu, bms_link, vehicle_can.
 struct __attribute__((packed)) MeasuredImuRecord {
   float type, timeSeconds;
   float accelXG, accelYG, accelZG;
@@ -48,11 +43,14 @@ struct __attribute__((packed)) MeasuredImuRecord {
 extern File sdMeasuredLogFile;
 void appendSdLog(File &file, bool measuredLog, const void *data, size_t len);
 extern bool sdLogActive;
+void writeCellDataResponseLog(const CAN_message_t &msg);
 
-// Owned by can_trace (V22). Used by imu, bms_link.
+// Owned by can_trace (V22). Used by imu, bms_link, vehicle_can.
 void printCanHexByte(uint8_t value);
 static constexpr uint8_t CELL_DATA_REQUEST_TEMPERATURES = 0x02;
 static constexpr uint8_t CELL_DATA_REQUEST_VOLTAGES     = 0x01;
+void updateCanTranslationState(const char *direction, const CAN_message_t &msg);
+void logCanTranslationToSerial(const char *direction, const CAN_message_t &msg);
 
 // Owned by can_trace_imd (V23). Used by imd.
 static constexpr uint8_t IMD_SNV_BYTE         = 0xFF;

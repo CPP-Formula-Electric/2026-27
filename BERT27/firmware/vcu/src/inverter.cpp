@@ -12,6 +12,7 @@
 #include "can_bytes.h"
 #include "bms_link.h"
 #include "main.h"
+#include "vehicle_can.h"
 
 void sendPm100BroadcastEnable();
 void sendPm100FaultClear();
